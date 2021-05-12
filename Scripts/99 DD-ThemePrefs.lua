@@ -49,17 +49,6 @@ SL_CustomPrefs.Get = function()
 			Choices = { THEME:GetString("ThemePrefs","Yes"), THEME:GetString("ThemePrefs", "No") },
 			Values 	= { true, false }
 		},
-		DefaultGameMode =
-		{
-			Default = "ITG",
-			Choices = {
-				THEME:GetString("ScreenSelectPlayMode", "Casual"),
-				THEME:GetString("ScreenSelectPlayMode", "ITG"),
-				THEME:GetString("ScreenSelectPlayMode", "FA+"),
-				THEME:GetString("ScreenSelectPlayMode", "DD"),
-			},
-			Values 	= { "Casual", "ITG", "FA+", "DD" }
-		},
 		AutoStyle =
 		{
 			Default = "none",
@@ -71,34 +60,9 @@ SL_CustomPrefs.Get = function()
 			},
 			Values 	= { "none", "single", "versus", "double" }
 		},
-		RainbowMode = {
-			Default = false,
-			Choices = {
-				THEME:GetString("ThemePrefs", "On"),
-				THEME:GetString("ThemePrefs", "Off")
-			},
-			Values 	= { true , false }
-		},
-		-- - - - - - - - - - - - - - - - - - - -
-		-- SimplyLoveColor saves the theme color for the next time
-		-- the StepMania application is started.
-		SimplyLoveColor =
-		{
-			-- a nice pinkish-purple, by default
-			Default = 3,
-			Choices = { 1,2,3,4,5,6,7,8,9,10,11,12 },
-			Values = { 1,2,3,4,5,6,7,8,9,10,11,12 }
-		},
-
 		-- - - - - - - - - - - - - - - - - - - -
 		-- MenuTimer values for various screens
 		ScreenSelectMusicMenuTimer =
-		{
-			Default = 300,
-			Choices = SecondsToMMSS_range(60, 450, 15),
-			Values = range(60, 450, 15),
-		},
-		ScreenSelectMusicCasualMenuTimer =
 		{
 			Default = 300,
 			Choices = SecondsToMMSS_range(60, 450, 15),
@@ -129,14 +93,6 @@ SL_CustomPrefs.Get = function()
 			Values = range(15, 450, 15),
 		},
 
-		-- - - - - - - - - - - - - - - - - - - -
-		-- Enable/Disable Certain Screens
-		AllowScreenSelectColor =
-		{
-			Default = true,
-			Choices = { THEME:GetString("ThemePrefs","Yes"), THEME:GetString("ThemePrefs", "No") },
-			Values 	= { true, false }
-		},
 		AllowScreenEvalSummary =
 		{
 			Default = true,
@@ -155,29 +111,13 @@ SL_CustomPrefs.Get = function()
 			Choices = { THEME:GetString("ThemePrefs","Yes"), THEME:GetString("ThemePrefs", "No") },
 			Values 	= { true, false }
 		},
+		
 		-- - - - - - - - - - - - - - - - - - - -
-		-- Casual GameMode Settings
-		CasualMaxMeter = {
-			Default = 10,
-			Choices = range(5, 15, 1),
-			Values = range(5, 15, 1)
-		},
-
-		-- - - - - - - - - - - - - - - - - - - -
-		-- SM5.1's ImageCache System (used in CasualMode)
+		-- SM5.1's ImageCache System (used in DDMode)
 		UseImageCache = {
 			Default = false,
 			Choices =  { THEME:GetString("ThemePrefs","Yes"), THEME:GetString("ThemePrefs", "No") },
 			Values	= { true, false }
-		},
-
-		-- - - - - - - - - - - - - - - - - - - -
-		-- this was previously titled "The Rabbit Hole"
-		-- https://github.com/48productions/Simply-Potato-SM5/pull/4#issuecomment-587281943
-		HereInTheDarkness = {
-			Default = 0,
-			Choices = range(0, 22, 1),
-			Values = range(0, 22, 1),
 		},
 	}
 end

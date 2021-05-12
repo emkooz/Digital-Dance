@@ -1,34 +1,64 @@
-WIP Theme for SM5 that uses Simply Love as a base, but hopefully over time I can fix some problems I had with it along with adding even more features.
+# Digital Dance v1.0.0
+Huge thanks to Nantano, Sujeet, Ian, and Dom for the Groovestats Launcher/Intergration!
+Also thanks to Box for help getting the new Song Wheel in it's current state!
+Without them this update wouldn't be nearly as awesome~
 
-# ---------------- Notable changes ----------------
+# ---------------- GrooveStats Integration ----------------
+Rivals, Scores, Leaderboards, Auto-Uploading of scores, it's all here! Please [watch the video](https://www.youtube.com/watch?v=8yMzp7xMQq0) and refer the [GrooveStats Launcher Guide](https://github.com/GrooveStats/gslauncher#readme) on how to setup the StepMania wrapper program that will get you connected.
 
-- Removal of visual themes
-- Removal of different game modes (ITG only) [Kind of]
-- No more difficulty "blocks". Difficulty numbers are displayed, but enlarged and accompanied by a highlight cursor to indicate which difficulty you've selected. Both cursors are colored based on player.
-- The chart pane on screen select music (the thing that lists steps, holds, etc) has the difficulty number removed as well. Don't need the redundancy of having the difficulty shown in 3 different ways. Also gives more space for additional info in the future.
-- Density graphs always present on screen select music along with a generalized breakdown if any.
-- The generalized breakdown now also displays the total measure count instead if the breakdown string is too long.
-- Step artist field extended and text made slightly smaller to fit more information before it gets squished into oblivion.
-- Difficulties are colored by their actual difficulty, but are slightly lighter to avoid eye strain.
+First, check and see if you're connected!
+
+![CheckConnection](https://i.imgur.com/QQOsCG9.png)
+
+Setup your Rivals on [GrooveStats](https://groovestats.com/index.php?page=register&action=update) and check out your scores write in on the Select Music Screen
+
+![PaneDisplayGSScores](https://i.imgur.com/BrTCdFy.png)
+
+Want to see more scores? Open the sort menu and select the "Leaderboard" option! We show you the World Record, your Personal Best, your three Rivals' scores, and then scores closest around you (might help you branch out and find some other people to rival!)
+
+![Additionalscores](https://i.imgur.com/YOiiCcr.png)
+
+Passed a new song? Got a new score? Your scores will be automatically uploaded to GrooveStats! Note that we do not upload failed scores and that those still need to be uploaded manually (either through the QR code or the web portal).
+
+# ---------------- New Song Wheel and Sort Menu ----------------
+
+I started working on this song wheel way back in like 2018? and it's based of Casual Mode in Simply Love (Thanks quietly-turning <3)
+I ended up giving up because it was well out of my abilities, but after picking it back up earlier this year I was determined to finish it. If it wasn't for Box though I don't think this would have ever seen the light of day. He helped me so much with a lot of sorting/filtering logic and I could not have done it without him. I learned a lot about coding and also how terrible Stepmania is while doing this. I definitely still have a lot more to learn too lol.
+
+- A brand new songwheel with custom sorting and filtering options!
+
+- New Sort Menu has Sort/Sub sort options.
+
+- It can also filter songs by things like difficulty, bpm, and length.
+
+- A Groovestats filter that will only display packs that are ranked on Groovestats.
+
+- Song sorts/filters will be remembered between sessions as well. (Profile based)
+
+Currently to access the Sort Menu you have to press the "Select" button (typically the red button on a cab). To update any options all you need to do is select your desired sorts/filters and back out of the sort menu (either by pressing "Select" or "Escape"). It will automatically reload the music wheel with your new sort/filter preferences.
+
+![sortmenu](https://i.imgur.com/37sNdIj.png)
+
+- Added a song search functionality. (In the sort menu)
+
+![songsearch](https://i.imgur.com/bZ4R32V.png)
+
+If you don't have a keyboard you can just press enter to go back to the music wheel. In the future I will change this to just not show up if you don't have a keyboard, but I want this release to come out asap.
+
+
+# ---------------- Other Changes ----------------
+
+- Density Graph color is based off of NPS. The higher the NPS the more red it is.
+- Density Graph breakdown on song select is now more detailed and caches so it only needs to be parsed once. (Thanks Sujeet!)
+- Removal of game modes.
 - CDTitle support added.
-- Reduced the total filesize of the theme bringing it down from ~120mbs to just about 15mbs.
-- Preview music no longer loops so you can actually hold a conversation with someone inbetween songs without having to leave the song folder.
-- Song title present at the bottom of the mod menu. (Just in case you forget what you picked after the music stops looping)
-- Style indicator at the top right on evaluation (to distinguish between single and double)
-- The per column note tracking will stop counting up once you fail. (This makes determining pad issues a lot easier.)
-- Player stats added that includes things like steps per set/lifetime, songs in set/lifetime, average bpm, and average difficulty.
-- Added Player Stats support to 4:3 displays (Only in 1 player mode)
-- Average difficulty will now account for rate mods : )
-- Each player can have their own unique profile picture and if one isn't present then a default image will appear in place.
-- Each player gets their own difficulty selection instead of being shared. (Unless in 4:3)
-- Music wheel is centered and each player's assets are on their own side instead of arbitrarily having P2 cover up the wheel when playing. (Only on widescreen)
-- Added a song search function. (In the sort menu)
-- Sorting by difficulty is currently a custom sort handled by entering a number so that you can get every chart of that difficulty instead of only Expert, Hard, etc. (This will be changed in the future)
 
 # ---------------- How to use a profile picture ----------------
 
 - Add a new image at the root of your save folder of your profile.
 - (Example: \Save\LocalProfiles\00000000\Profile Picture.png)
+
+![pp](https://i.imgur.com/YDMuJjY.png)
 
 The image must:
 - Have a 1:1 aspect ratio for best appearance. (Image will be resized as such).
@@ -40,27 +70,20 @@ The image must:
   * <strong>16:10</strong> (Apple laptops, some LCD monitors)
   * <strong>4:3</strong> (CRT arcade monitors, older TVs)
   
- - This might work, but I haven't had the chance to take a look.
-  * <strong>21:9</strong> ("Ultrawide")
-
 The aspect ratio can be changed under *Graphics / Sound Options*.
 
-## Screenshots
-![Select Music w/ Simplified Breakdown](https://i.imgur.com/uvBeh6u.png)
-![Select Music on 2P w/ Guest Profile](https://i.imgur.com/HAC5rap.jpg)
-![4:3 w/ Player Stats](https://i.imgur.com/1Y9l8nC.jpg)
-![2P in 4:3, no Player Stats are shown](https://i.imgur.com/07HFW5f.png)
-
-
 # -- KNOWN ISSUES and general things to note --
+- Sort Menu can only be accessed if you have 4 button navigation on at the moment (aka having a "Select"/Red button)
 - Theme is intended for home use only.
 - I don't expect this to work outside of event mode.
-- CDTitles appear on top of the sort menu despite draw orders being correct x_x
+- 4:3 aspect ratio has less info displayed on 2 player because of lack of room. (No density graph or profile pane)
 
 # ---------------- TO DO ----------------
+- Make the Sort Menu accessible to people with 3 button navigation.
 - Maybe add more player stats (highest difficulty passed?)
-- I really want to add a chart preview, but I don't know how realistic it is to do that theme-side and not be a laggy mess.
-- Completely remove game modes. (competitive/itg mode still technically exists and I'd rather it not set all the metrics and things through lua)
-- Fix CDTitles to not appear on top of the sort menu.
-- Remake screen select music through lua to add custom sort/subsort and filter options... and also not be a laggy mess...
-- Clean up my code. (It's better now than it was in the last version.) At least most things are labeled lol
+- Add more sorts/filters?
+- Add "Favorites" and/or tags for songs/groups.
+- Add a hashcache so I can do sorts like NPS.
+- Have the Groovestats filter use chart hash to filter rather than by pack directory.
+- I really want to add a chart preview. This might be possible with HashCache, but we'll see in the future I guess.
+- Clean up my code. It's better now than it was in the last version, but could be better.

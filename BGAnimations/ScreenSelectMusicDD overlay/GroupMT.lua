@@ -7,6 +7,7 @@ local row = args[5]
 local col = args[6]
 local Input = args[7]
 local PruneSongsFromGroup = args[8]
+local starting_group = args[9]
 
 local max_chars = 64
 
@@ -14,7 +15,6 @@ local switch_to_songs = function(group_name,event)
 	local songs, index = PruneSongsFromGroup(group_name)
 	songs[#songs+1] = "CloseThisFolder"
 	SongWheel:set_info_set(songs, index)
-	
 end
 
 local switch_to_songs_from_group = function(group_name,event)
@@ -36,7 +36,6 @@ local item_mt = {
 
 			local af = Def.ActorFrame{
 				Name=name,
-
 				InitCommand=function(subself)
 					self.container = subself
 
@@ -50,13 +49,17 @@ local item_mt = {
 							-- position this folder in the header
 							subself:zoom(0)
 
-							local starting_group = GAMESTATE:GetCurrentSong():GetGroupName()
 							switch_to_songs(starting_group)
 							MESSAGEMAN:Broadcast("SwitchFocusToSongs")
 							MESSAGEMAN:Broadcast("CurrentGroupChanged", {group=starting_group})
 						end
 					end
 				end,
+				
+				ReloadDDMusicWheelMessageCommand=function(subself)
+					subself:queuecommand("set")
+				end,
+				
 				OnCommand=function(subself) subself:finishtweening() end,
 
 				StartCommand=function(subself)
@@ -69,6 +72,7 @@ local item_mt = {
 						subself:linear(0.2):diffusealpha(0)
 					end
 				end,
+				
 				UnhideCommand=function(subself)
 					-- we're going back to group selection
 					-- slide the chosen group Actor back into grid position
@@ -80,8 +84,8 @@ local item_mt = {
 						subself:sleep(0.25):linear(0.2):diffusealpha(1)
 					end
 				end,
-				GainFocusCommand=function(subself) subself:linear(0):zoom(1) end,
-				LoseFocusCommand=function(subself) subself:linear(0):zoom(1) end,
+				GainFocusCommand=function(subself) subself:decelerate(0):zoom(1) end,
+				LoseFocusCommand=function(subself) subself:decelerate(0):zoom(1) end,
 				SlideToTopCommand=function(subself)
 					subself:linear(0.12):zoom(0)
 					       :linear(0.2 ):queuecommand("Switch")
@@ -137,16 +141,16 @@ local item_mt = {
 		end,
 
 		transform = function(self, item_index, num_items, has_focus)
-
 			local offset = item_index - math.floor(num_items/2)
 			local ry = offset > 0 and 25 or (offset < 0 and -25 or 0)
 			self.container:finishtweening()
+
 
 			-- if we are initializing the screen, the focus starts (should start) on the SongWheel
 			-- so we want to position all the folders "behind the scenes", and then call Init
 			-- on the group folder with focus so that it is positioned correctly at the top
 			if Input.WheelWithFocus ~= GroupWheel then
-				self.container:y( ((offset * col.w)/8.4 + _screen.cy) + 45 )
+				self.container:y( IsUsingWideScreen() and WideScale( ((offset * col.w)/6.8 + _screen.cy) + 45 , ((offset * col.w)/8.4 + _screen.cy) + 45 )  or ((offset * col.w)/6.4 + _screen.cy) + 45 )
 				if has_focus then 
 				self.container:playcommand("Init") end
 
@@ -159,7 +163,10 @@ local item_mt = {
 				else
 					self.container:playcommand("LoseFocus")
 				end
-				self.container:y( ((offset * col.w)/8.4 + _screen.cy) + 45 )
+				if item_index ~= 1 and item_index ~= num_items then
+					self.container:decelerate(0.1)
+				end
+				self.container:y( IsUsingWideScreen() and WideScale( ((offset * col.w)/6.8 + _screen.cy) + 45 , ((offset * col.w)/8.4 + _screen.cy) + 45 )  or ((offset * col.w)/6.4 + _screen.cy) + 45 )
 			end
 		end,
 

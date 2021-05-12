@@ -21,14 +21,19 @@ TotalDifficultyPlayer2 = 0
 else
 end
 
-PlayerOneNPS = GetNPSperMeasure(GAMESTATE:GetCurrentSong(), PlayerOneChart)
-PlayerTwoNPS = GetNPSperMeasure(GAMESTATE:GetCurrentSong(), PlayerTwoChart)
-
+-- Have the BPM based off PeakNPS instead to get the 16th equivalent BPM for things with 24th/32nd stream etc.
 local MusicRate = SL.Global.ActiveModifiers.MusicRate
 
--- Have the BPM based off PeakNPS instead to get the 16th equivalent BPM for things with 24th/32nd stream etc.
-PlayerOneTrueBPM = ((PlayerOneNPS / 16) * 240) * MusicRate
-PlayerTwoTrueBPM = ((PlayerTwoNPS / 16) * 240) * MusicRate
+if P1 then
+PlayerOneNPS = SL["P1"].Streams.PeakNPS
+PlayerOneTrueBPM = (PlayerOneNPS * 15) * MusicRate
+end
+
+if P2 then
+PlayerTwoNPS = SL["P2"].Streams.PeakNPS
+PlayerTwoTrueBPM = (PlayerTwoNPS * 15) * MusicRate
+end
+
 
 ---------- Only do these if the player is currently active or else things will get messy. ----------
 if P1 then
@@ -78,8 +83,18 @@ TotalDifficultyPlayer2 = PlayerTwoREALDifficulty + TotalDifficultyPlayer2
 AverageDifficultyPlayer2 = TotalDifficultyPlayer2 / P2SongsInSet
 end
 
+-- Update stats
+local song = GAMESTATE:GetCurrentSong()
+if GAMESTATE:IsPlayerEnabled(PLAYER_1) then
+	DDStats.SetStat(PLAYER_1, 'LastSong', song:GetSongDir())
+	DDStats.SetStat(PLAYER_1, 'LastDifficulty', PlayerOneChart:GetDifficulty())
+	DDStats.Save(PLAYER_1)
+end
 
-
-
+if GAMESTATE:IsPlayerEnabled(PLAYER_2) then
+	DDStats.SetStat(PLAYER_2, 'LastSong', song:GetSongDir())
+	DDStats.SetStat(PLAYER_2, 'LastDifficulty', PlayerTwoChart:GetDifficulty())
+	DDStats.Save(PLAYER_2)
+end
 
 return Def.ActorFrame { }

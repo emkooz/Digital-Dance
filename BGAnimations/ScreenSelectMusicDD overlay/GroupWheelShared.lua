@@ -6,7 +6,7 @@ local args = ...
 local row = args[1]
 local col = args[1]
 local group_info = args[3]
-
+CurrentGroupIsInvalid = false
 
 if group_info == nil then
 	return Def.Actor{ InitCommand=function(self) self:visible(false) end }
@@ -28,14 +28,13 @@ af[#af+1] = Def.ActorFrame{
 	Def.BitmapText{
 		Font="Common Normal",
 		InitCommand=function(self)
-			self:zoom(0.8):diffuse(Color.White):xy(150,-15):maxwidth(300):horizalign(right)
+			self:zoom(0.8):diffuse(Color.White):xy(IsUsingWideScreen() and 150 or 310,IsUsingWideScreen() and -15 or -113):maxwidth(300):horizalign(right)
 		end,
 		CurrentGroupChangedMessageCommand=function(self, params)
-			if params.group then
-				self:settext( group_info[params.group].num_songs)
-				GroupSongCount = group_info[params.group].num_songs
+			if params.group and group_info[params.group] then
+				self:settext(group_info[params.group].num_songs)
 			else
-				self:self("")
+				self:settext("")
 			end
 		end,
 	},

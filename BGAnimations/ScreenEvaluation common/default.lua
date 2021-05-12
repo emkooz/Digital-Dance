@@ -1,18 +1,41 @@
 local Players = GAMESTATE:GetHumanPlayers()
-local NumPanes = SL.Global.GameMode=="Casual" and 1 or 6
+local NumPanes = 7
 
-local t = Def.ActorFrame{}
+local InputHandler = nil
+local RpgInputHandler = nil
 
-if SL.Global.GameMode ~= "Casual" then
-	-- add a lua-based InputCalllback to this screen so that we can navigate
-	-- through multiple panes of information; pass a reference to this ActorFrame
-	-- and the number of panes there are to InputHandler.lua
-	t.OnCommand=function(self)
-		if SL.Global.GameMode ~= "Casual" then
-			SCREENMAN:GetTopScreen():AddInputCallback( LoadActor("./InputHandler.lua", {self, NumPanes}) )
-		end
+if ThemePrefs.Get("WriteCustomScores") then
+	WriteScores()
+end
+
+local t = Def.ActorFrame{Name="ScreenEval Common"}
+
+
+-- add a lua-based InputCalllback to this screen so that we can navigate
+-- through multiple panes of information; pass a reference to this ActorFrame
+-- and the number of panes there are to InputHandler.lua
+t.OnCommand=function(self)
+	InputHandler = LoadActor("./InputHandler.lua", {self, NumPanes})
+	RpgInputHandler = LoadActor("./Shared/RpgInputHandler.lua")
+	SCREENMAN:GetTopScreen():AddInputCallback(InputHandler)
+end
+t.DirectInputToEngineCommand=function(self)
+	SCREENMAN:GetTopScreen():RemoveInputCallback(RpgInputHandler)
+	SCREENMAN:GetTopScreen():AddInputCallback(InputHandler)
+
+	for player in ivalues(PlayerNumber) do
+		SCREENMAN:set_input_redirected(player, false)
 	end
 end
+t.DirectInputToRpgHandlerCommand=function(self)
+	SCREENMAN:GetTopScreen():RemoveInputCallback(InputHandler)
+	SCREENMAN:GetTopScreen():AddInputCallback(RpgInputHandler)
+
+	for player in ivalues(PlayerNumber) do
+		SCREENMAN:set_input_redirected(player, true)
+	end
+end
+
 
 -- This is to show style icons based on style type (1-2 Player vs Double)
 if GAMESTATE:GetCurrentStyle():GetStyleType() == "StyleType_OnePlayerTwoSides" then
@@ -36,6 +59,7 @@ else
 		end
 	}
 	end
+
 -- -----------------------------------------------------------------------
 -- First, add actors that would be the same whether 1 or 2 players are joined.
 
@@ -52,10 +76,7 @@ t[#t+1] = LoadActor("./Shared/BPM_RateMod.lua")
 -- for later retrieval on ScreenEvaluationSummary
 t[#t+1] = LoadActor("./Shared/GlobalStorage.lua")
 
--- help text that appears if we're in Casual gamemode
-t[#t+1] = LoadActor("./Shared/CasualHelpText.lua")
-
--- Guest Steps
+-- Guest steps
 t[#t+1] = LoadActor("./GuestSteps.lua")
 
 -- -----------------------------------------------------------------------
@@ -71,13 +92,21 @@ for player in ivalues(Players) do
 	-- stepartist, difficulty text, difficulty meter, machine/personal HighScore text
 	t[#t+1] = LoadActor("./PerPlayer/Upper/default.lua", player)
 
-	-- the per-player lower half of ScreenEvaluation, including: judgment scatterplot,
-	-- modifier list, disqualified text, and panes 1-6
+	-- the per-player lower half of ScreenEvaluation, including:
+	-- judgment scatterplot, modifier list, disqualified text
 	t[#t+1] = LoadActor("./PerPlayer/Lower/default.lua", player)
 end
 
 -- -----------------------------------------------------------------------
+-- Then load the Panes.
 
 t[#t+1] = LoadActor("./Panes/default.lua", NumPanes)
+
+-- -----------------------------------------------------------------------
+
+-- The actor that will automatically upload scores to GrooveStats.
+-- This is only added in "dance" mode and if the service is available.
+-- Since this actor also spawns the RPG overlay it must go on top of everything else
+t[#t+1] = LoadActor("./Shared/AutoSubmitScore.lua")
 
 return t

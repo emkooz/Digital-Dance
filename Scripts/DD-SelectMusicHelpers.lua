@@ -1,7 +1,7 @@
 -- ----------------------------------------------------------------------------------------
--- functions used by ScreenSelectMusicCasual
+-- functions used by ScreenSelectMusicDD
 
--- used by SSMCasual to play preview music of the current song
+-- used by ScreenSelectMusicDD to play preview music of the current song
 -- this is invoked each time the custom MusicWheel changes focus
 play_sample_music = function()
 	if GAMESTATE:IsCourseMode() then return end
@@ -23,7 +23,7 @@ play_sample_music = function()
 	end
 end
 
--- used by SSMCasual to stop playing preview music,
+-- used by ScreenSelectMusicDD to stop playing preview music,
 -- this is invoked every time the custom MusicWheel changes focus
 -- if the new focus is on song item, play_sample_music() will be invoked immediately afterwards
 -- ths is also invoked when the player closes the current group to choose some other group
@@ -62,7 +62,7 @@ TextBannerAfterSet = function(self)
 end
 
 ----------------------------------------------------------------------------------------
--- functions used by both SSM and SSMCasual
+-- functions used by both SSM and ScreenSelectMusicDD
 
 SSM_Header_StageText = function()
 
@@ -106,4 +106,31 @@ SSM_Header_StageText = function()
 			return THEME:GetString("Stage", "Stage") .. " " .. tostring(SL.Global.Stages.PlayedThisGame + 1)
 		end
 	end
+end
+
+
+--- Returns the grade for a given song and chart or nil if there isn't a high score.
+--- @param player Enum
+--- @param songParam Song
+--- @param chartParam Steps
+--- @param rateParam boolean
+function GetTopGrade(player, songParam, chartParam)
+	local song = GAMESTATE:GetCurrentSong()
+	local chart = GAMESTATE:GetCurrentSteps(player)
+	local grade
+	local pn = ToEnumShortString(player)
+	
+	if song then
+		local score = PROFILEMAN:GetProfile(pn):GetHighScoreList(song,chart):GetHighScores()[1]
+		if score then
+			grade = score:GetGrade()
+		else
+		end
+		if grade then
+			local converted_grade = Grade:Reverse()[grade]
+			if converted_grade > 17 then converted_grade = 17 end
+			return converted_grade
+		end
+	else end
+	return nil
 end

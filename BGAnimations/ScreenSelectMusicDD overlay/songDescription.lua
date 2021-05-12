@@ -12,6 +12,26 @@
 
 local group_durations = {}
 local stages_remaining = GAMESTATE:GetNumStagesLeft(GAMESTATE:GetMasterPlayerNumber())
+local currentsong = GAMESTATE:GetCurrentSong()
+local HasCDTitle = currentsong:HasCDTitle()
+local blank = THEME:GetPathG("", "_blank.png")
+local CDTitlePath
+
+
+if CDTitlePath == blank or CDTitlePath == nil then
+		if HasCDTitle then
+			CDTitlePath = GAMESTATE:GetCurrentSong():GetCDTitlePath()
+		else
+			CDTitlePath = blank
+		end
+		if CDTitlePath == nil then
+			CDTitlePath = blank
+		elseif HasCDTitle then
+			CDTitlePath = GAMESTATE:GetCurrentSong():GetCDTitlePath()
+		else
+			CDTitlePath = blank
+		end
+	end
 
 for _,group_name in ipairs(SONGMAN:GetSongGroupNames()) do
 	group_durations[group_name] = 0
@@ -49,15 +69,57 @@ af[#af+1] = Def.Quad{
 	InitCommand=function(self)
 		self:zoomto( IsUsingWideScreen() and 320 or 311, 48 )
 		self:diffuse(color("#1e282f"))
-
-		if ThemePrefs.Get("RainbowMode") then self:diffusealpha(0.9) end
 	end
 }
 
--- ActorFrame for Artist, BPM, and Song length
+-- ActorFrame for Artist, BPM, Song length, and CDTitles because I'M GAY LOL
 af[#af+1] = Def.ActorFrame{
 	InitCommand=function(self) self:xy(-110,-6) end,
-
+	
+	
+	--- CDTitle
+	Def.Sprite{
+		Name="CDTitle",
+		CurrentSongChangedMessageCommand=function(self) self:playcommand("Set") end,
+		CloseThisFolderHasFocusMessageCommand=function(self) self:visible(false) end,
+		GroupsHaveChangedMessageCommand=function(self) self:visible(false) end,
+		InitCommand=function(self) 
+			local Height = self:GetHeight()
+			local Width = self:GetWidth()
+			local dim1, dim2=math.max(Width, Height), math.min(Width, Height)
+			local ratio=math.max(dim1/dim2, 2)
+			local toScale = Width > Height and Width or Height
+			self:zoom(22/toScale * ratio)
+			self:horizalign(right)
+			self:xy(265,6)
+			self:diffusealpha(0)
+		end,
+		OnCommand=function(self) 
+			self:decelerate(0.4)
+			self:diffusealpha(0.9) 
+		end,
+		SetCommand=function(self)
+			self:stoptweening()
+			local Height = self:GetHeight()
+			local Width = self:GetWidth()
+			local dim1, dim2=math.max(Width, Height), math.min(Width, Height)
+			local ratio=math.max(dim1/dim2, 2)
+			local toScale = Width > Height and Width or Height	
+			
+			if GAMESTATE:GetCurrentSong() ~= nil then
+				if GAMESTATE:GetCurrentSong():HasCDTitle() == true then
+					CDTitlePath = GAMESTATE:GetCurrentSong():GetCDTitlePath()
+					self:Load(CDTitlePath)
+				else
+					self:Load(blank)
+				end
+			end
+			self:zoom(22/toScale * ratio)
+			self:visible(true)
+			
+		end
+	},
+	
 	-- ----------------------------------------
 	-- Artist Label
 	LoadFont("Common Normal")..{
@@ -112,16 +174,11 @@ af[#af+1] = Def.ActorFrame{
 			self:xy(-5,5):diffuse(1,1,1,1):vertspacing(-8)
 		end,
 		SetCommand=function(self)
-
-			if MusicWheel then SelectedType = MusicWheel:GetSelectedType() end
-
-			-- we only want to try to show BPM values for Songs and Courses
-			-- not Section, Roulette, Random, Portal, Sort, or Custom
-			-- (aside: what is "WheelItemDataType_Custom"?  I need to look into that.)
-			if not (SelectedType=="WheelItemDataType_Song" or SelectedType=="WheelItemDataType_Course") then
+			if GAMESTATE:GetCurrentSong() == nil then
 				self:settext("")
-				return
-			end
+			return end
+				
+			if MusicWheel then SelectedType = MusicWheel:GetSelectedType() end
 
 			-- if only one player is joined, stringify the DisplayBPMs and return early
 			if #GAMESTATE:GetHumanPlayers() == 1 then
@@ -188,7 +245,7 @@ af[#af+1] = Def.ActorFrame{
 
 			local seconds
 
-			if SelectedType == "WheelItemDataType_Song" then
+			if SelectedType == "WheelItemDataType_Song" or "SwitchFocusToSingleSong" then
 				-- GAMESTATE:GetCurrentSong() can return nil here if we're in pay mode on round 2 (or later)
 				-- and we're returning to SSM to find that the song we'd just played is no longer available
 				-- because it exceeds the 2-round or 3-round time limit cutoff.
@@ -201,15 +258,6 @@ af[#af+1] = Def.ActorFrame{
 				-- MusicWheel:GetSelectedSection() will return a string for the text of the currently active WheelItem
 				-- use it here to look up the overall duration of this group from our precalculated table of group durations
 				seconds = group_durations[MusicWheel:GetSelectedSection()]
-
-			elseif SelectedType == "WheelItemDataType_Course" then
-				-- is it possible for 2 Trails within the same Course to have differing durations?
-				-- I can't think of a scenario where that would happen, but hey, this is StepMania.
-				-- In any case, I'm opting to display the duration of the MPN's current trail.
-				local trail = GAMESTATE:GetCurrentTrail(GAMESTATE:GetMasterPlayerNumber())
-				if trail then
-					seconds = TrailUtil.GetTotalSeconds(trail)
-				end
 			end
 
 			-- r21 lol

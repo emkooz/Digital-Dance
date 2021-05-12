@@ -15,7 +15,7 @@ return Def.ActorFrame { }
 end
 
 return Def.Sprite{
-	Texture=THEME:GetPathB("ScreenSelectMusic", "overlay/PerPlayer/highlight.png"),
+	Texture=THEME:GetPathB("ScreenSelectMusicDD","overlay/PerPlayer/highlight.png"),
 	Name="Cursor"..pn,
 	InitCommand=function(self)
 	
@@ -33,7 +33,7 @@ return Def.Sprite{
 
 		if player == PLAYER_1 then
 			self:x( IsUsingWideScreen() and _screen.cx-330 or 0)
-			self:y( IsUsingWideScreen() and WideScale(317,320) or 194)
+			self:y( IsUsingWideScreen() and WideScale(303,305.75) or 194)
 			self:effectmagnitude(-6,0,6)
 				if IsUsingWideScreen() then
 				else
@@ -41,7 +41,7 @@ return Def.Sprite{
 				end
 
 		elseif player == PLAYER_2 then
-			self:y(IsUsingWideScreen()and WideScale(318,319) or 193)
+			self:y(IsUsingWideScreen()and WideScale(303,305.75) or 193)
 			self:effectmagnitude(-6,0,6)
 				if IsUsingWideScreen() then
 					self:align(WideScale(-12.7,-12.21),0.49)
@@ -65,13 +65,18 @@ return Def.Sprite{
 	CurrentTrailP1ChangedMessageCommand=cmd(queuecommand,"Set"),
 	CurrentStepsP2ChangedMessageCommand=cmd(queuecommand,"Set"),
 	CurrentTrailP2ChangedMessageCommand=cmd(queuecommand,"Set"),
+	
+	CloseThisFolderHasFocusMessageCommand=cmd(queuecommand,"Dissappear"),
 
 	SetCommand=function(self)
 		local song = (GAMESTATE:IsCourseMode() and GAMESTATE:GetCurrentCourse()) or GAMESTATE:GetCurrentSong()
-
+		if GAMESTATE:IsHumanPlayer(player) then
+			self:playcommand( "Appear" .. pn)
+		end
 		if song then
+			
 			steps = (GAMESTATE:IsCourseMode() and song:GetAllTrails()) or SongUtil.GetPlayableSteps( song )
-
+			
 			if steps then
 				StepsToDisplay = GetStepsToDisplay(steps)
 				self:playcommand("StepsHaveChanged", {Steps=StepsToDisplay, Player=player})
@@ -92,6 +97,7 @@ return Def.Sprite{
 	end,
 
 	["Appear" .. pn .. "Command"]=function(self) self:visible(true) end,
+	DissappearCommand=function(self) self:visible(false) end,
 
 	StepsHaveChangedCommand=function(self, params)
 

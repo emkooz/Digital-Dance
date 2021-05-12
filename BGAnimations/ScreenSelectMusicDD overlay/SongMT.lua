@@ -9,8 +9,6 @@ local NoJacketTexture = nil
 
 local Subtitle
 
-NameOfGroup = GAMESTATE:GetCurrentSong():GetGroupName()
-
 local song_mt = {
 	__index = {
 		create_actors = function(self, name)
@@ -78,8 +76,10 @@ local song_mt = {
 						SwitchFocusToSingleSongMessageCommand=function(subself) subself:smooth(0.3):cropright(1):diffuse(color("#0a141b")):playcommand("Set") end,
 						
 						SetCommand=function(subself)
-							subself:xy(0, _screen.cy-215):finishtweening()
-							:accelerate(0.2):cropbottom(0)
+							subself:x(0)
+							subself:y(_screen.cy-215)
+							subself:finishtweening()
+							subself:accelerate(0.2):cropbottom(0)
 								
 						end,
 					},
@@ -111,6 +111,7 @@ local song_mt = {
 					InitCommand=function(subself)
 						self.subtitle_bmt = subself
 						subself:zoom(0.5):diffuse(Color.White):shadowlength(0.75)
+						subself:y(32)
 					end,
 					GainFocusCommand=function(subself)
 						if self.song == "CloseThisFolder" then
@@ -122,22 +123,58 @@ local song_mt = {
 					LoseFocusCommand=function(subself)
 						if self.song == "CloseThisFolder" then
 							subself:zoom(0.5)
+						else
 						end
 						subself:y(32):visible(true)
 					end,
 				},
 
 			}
+			
+			--Things we need two of
+			for pn in ivalues({'P1','P2'}) do
+				local side
+				if pn == 'PLAYER_1' then side = -1
+				else side = 1 end
+				local grade_position
+				if pn == 'P1' then
+					grade_position = -145
+				else
+					grade_position = -120
+				end
+				--A box for the pass type
+				--TODO this might be better as an AMV
+				af[#af+1] = Def.ActorFrame {
+					InitCommand=function(subself) 
+						subself:visible(true) 
+					end,
+					-- The grade shown to the left of the song box
+					Def.Sprite{
+						Texture=THEME:GetPathG("MusicWheelItem","Grades/grades 1x18.png"),
+						InitCommand=function(subself) subself:visible(false):zoom(WideScale(.25,.22)):x(side*grade_position):animate(0) self[pn..'grade_sprite'] = subself end,
+						SlideToTopCommand=function(subself)
+							subself:linear(.12):diffusealpha(0):xy(side*-1*-55,50):zoom(1):linear(.12):diffusealpha(1)
+						end,
+						SlideBackIntoGridCommand=function(subself)
+							subself:linear(.12):diffusealpha(0):zoom( WideScale(.25, 0.22)):xy(side*grade_position,0):linear(.12):diffusealpha(1)
+						end,
+					}
+				}
+			end
 
 			return af
 		end,
 
 		transform = function(self, item_index, num_items, has_focus)
-			local offset = item_index - math.floor(num_items/2)
+			local offset = IsUsingWideScreen() and WideScale( (item_index - math.floor(num_items/10)) - 3.4 , item_index - math.floor(num_items/3) - 0.4 ) or item_index - math.floor(num_items/2) + 3
 			local ry = offset > 0 and 25 or (offset < 0 and -25 or 0)
 			self.container:finishtweening()
 			self.container:finishtweening()
 			stop_music()
+
+			if item_index ~= 1 and item_index ~= num_items then
+				self.container:decelerate(0.1)
+			end
 
 			if has_focus then
 				if self.song ~= "CloseThisFolder" then
@@ -146,22 +183,51 @@ local song_mt = {
 
 					-- wait for the musicgrid to settle for at least 0.2 seconds before attempting to play preview music
 					self.preview_music:stoptweening():sleep(0.2):queuecommand("PlayMusicPreview")
-					self.container:y( ((offset * col.w)/8.4 + _screen.cy ) - 33)
+					self.container:y(IsUsingWideScreen() and WideScale(((offset * col.w)/6.8 + _screen.cy ) - 33 , ((offset * col.w)/8.4 + _screen.cy ) - 33) or ((offset * col.w)/6.4 + _screen.cy ) - 190)
 					self.container:x(_screen.cx)
 				else
+					GAMESTATE:SetCurrentSong(nil)
 					MESSAGEMAN:Broadcast("CloseThisFolderHasFocus")
 				end
 				self.container:playcommand("GainFocus")
 				self.container:x(_screen.cx)
-				self.container:y( ((offset * col.w)/8.4 + _screen.cy ) + 33)
+				self.container:y(IsUsingWideScreen() and WideScale(((offset * col.w)/6.8 + _screen.cy ) - 33 , ((offset * col.w)/8.4 + _screen.cy ) - 33) or ((offset * col.w)/6.4 + _screen.cy ) - 190)
 			else
 				self.container:playcommand("LoseFocus")
-				self.container:y( ((offset * col.w)/8.4 + _screen.cy ) + 33)
+				self.container:y(IsUsingWideScreen() and WideScale(((offset * col.w)/6.8 + _screen.cy ) - 33 , ((offset * col.w)/8.4 + _screen.cy ) - 33) or ((offset * col.w)/6.4 + _screen.cy ) - 190)
 				self.container:x(_screen.cx)
 			end
 			
-		end,
+			--change the Grade sprite
+			--TODO makes this not display multiple times for the same song
+			--[[for player in ivalues(GAMESTATE:GetHumanPlayers()) do
+				local pn = ToEnumShortString(player)
+				if self.song ~= "CloseThisFolder" then
+					local current_difficulty
+					local grade
+					local steps
+					if GAMESTATE:GetCurrentSteps(pn) then
+						current_difficulty = GAMESTATE:GetCurrentSteps(pn):GetDifficulty() --are we looking at steps?
+					end
+					if current_difficulty and self.song:GetOneSteps(GAMESTATE:GetCurrentSteps(pn):GetStepsType(),current_difficulty) then
+						steps = self.song:GetOneSteps(GAMESTATE:GetCurrentSteps(pn):GetStepsType(),current_difficulty)
+					end
+					if steps then
+						grade = GetTopGrade(player, self.song, steps)
+					end
+					--if we have a grade then set the grade sprite
+					if grade then
+						self[pn..'grade_sprite']:visible(true):setstate(grade)
+					else
+						self[pn..'grade_sprite']:visible(false)
+					end
+				else
+					self[pn..'grade_sprite']:visible(false)
+				end
 
+			end--]]
+		end,
+		
 		set = function(self, song)
 
 			if not song then return end
@@ -174,10 +240,8 @@ local song_mt = {
 			if type(song) == "string" then
 				self.song = song
 				self.title_bmt:settext(NameOfGroup):diffuse(color("#4ffff3")):horizalign(center):valign(0.5):x(0)
-				self.img_path = THEME:GetPathB("ScreenSelectMusicCasual", "overlay/img/CloseThisFolder.png")
 				self.QuadColor:diffuse(color("#4c565d"))
 				self.subtitle_bmt:settext("")
-
 			else
 				-- we are passed in a Song object as info
 				self.song = song

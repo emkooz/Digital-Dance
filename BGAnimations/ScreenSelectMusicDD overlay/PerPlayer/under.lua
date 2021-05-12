@@ -7,11 +7,8 @@ for player in ivalues( PlayerNumber ) do
 	-- AuthorCredit, Description, and ChartName associated with the current stepchart
 	t[#t+1] = LoadActor("./StepArtist.lua", player)
 
-	-- number of steps, jumps, holds, etc., and high scores associated with the current stepchart
-	t[#t+1] = LoadActor("./PaneDisplay.lua", player)
-	
-		-- Density Graph
-	--t[#t+1] = LoadActor("./DensityGraph.lua", player)
+	-- Density Graph
+	t[#t+1] = LoadActor("./DensityGraph.lua", player)
 end
 
 return t

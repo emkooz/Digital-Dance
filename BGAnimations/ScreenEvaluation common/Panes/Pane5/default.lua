@@ -1,7 +1,5 @@
 -- Pane5 displays TestInput.
 
-if SL.Global.GameMode == "Casual" then return end
-
 -- DedicatedMenu buttons are necessary here to prevent players from getting stuck in this pane
 if not PREFSMAN:GetPreference("OnlyDedicatedMenuButtons") then return end
 
@@ -10,12 +8,11 @@ if not (game=="dance" or game=="pump" or game=="techno") then return end
 
 -- -----------------------------------------------------------------------
 
-local player, side = unpack(...)
+local player = unpack(...)
 
 local style = ToEnumShortString(GAMESTATE:GetCurrentStyle():GetStyleType())
 
 local pane = Def.ActorFrame{
-	Name="Pane5",
 	InitCommand=function(self)
 		if style == "OnePlayerTwoSides" then
 			if IsUsingWideScreen() then

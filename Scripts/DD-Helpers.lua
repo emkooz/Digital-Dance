@@ -196,17 +196,31 @@ SL_WideScale = function(AR4_3, AR16_9)
 end
 
 -- -----------------------------------------------------------------------
+-- get timing window in milliseconds
+
+GetTimingWindow = function(n)
+	local prefs = SL.Preferences[SL.Global.GameMode]
+	local scale = PREFSMAN:GetPreference("TimingWindowScale")
+	return prefs["TimingWindowSecondsW"..n] * scale + prefs.TimingWindowAdd
+end
+
+-- -----------------------------------------------------------------------
 -- determines which timing_window an offset value (number) belongs to
 -- used by the judgment scatter plot and offset histogram in ScreenEvaluation
 
 DetermineTimingWindow = function(offset)
-	for i=1,5 do
-		if math.abs(offset) < SL.Preferences[SL.Global.GameMode]["TimingWindowSecondsW"..i] * PREFSMAN:GetPreference("TimingWindowScale") + SL.Preferences[SL.Global.GameMode]["TimingWindowAdd"] then
+	for i=1,NumJudgmentsAvailable() do
+		if math.abs(offset) < GetTimingWindow(i) then
 			return i
 		end
 	end
 	return 5
 end
+
+NumJudgmentsAvailable = function()
+	return 5
+end
+
 
 -- -----------------------------------------------------------------------
 -- some common information needed by ScreenSystemOverlay's credit display,
@@ -330,14 +344,6 @@ GetComboThreshold = function( MaintainOrContinue )
 		lights =	{ Maintain = "TapNoteScore_W3", Continue = "TapNoteScore_W3" },
 	}
 
-
-	if CurrentGame ~= "para" then
-		if SL.Global.GameMode=="FA+" then
-			ComboThresholdTable.dance.Maintain = "TapNoteScore_W4"
-			ComboThresholdTable.dance.Continue = "TapNoteScore_W4"
-		end
-	end
-
 	return ComboThresholdTable[CurrentGame][MaintainOrContinue]
 end
 
@@ -445,22 +451,18 @@ end
 -- -----------------------------------------------------------------------
 
 SetGameModePreferences = function()
-	-- apply the preferences associated with this GameMode
+	-- apply the preferences associated with this SL GameMode (Casual, ITG, FA+)
 	for key,val in pairs(SL.Preferences[SL.Global.GameMode]) do
 		PREFSMAN:SetPreference(key, val)
 	end
 
+	--------------------------------------------
 	-- If we're switching to Casual mode,
 	-- we want to reduce the number of judgments,
 	-- so turn Decents and WayOffs off now.
-	if SL.Global.GameMode == "Casual" then
-		SL.Global.ActiveModifiers.TimingWindows = {true,true,true,false,false}
+	SL.Global.ActiveModifiers.TimingWindows = {true,true,true,true,true}
 
-	-- Otherwise, we want all TimingWindows enabled by default.
-	else
- 		SL.Global.ActiveModifiers.TimingWindows = {true,true,true,true,true}
-	end
-
+	--------------------------------------------
 	-- loop through human players and apply whatever mods need to be set now
 	for player in ivalues(GAMESTATE:GetHumanPlayers()) do
 		-- Now that we've set the SL table for TimingWindows appropriately,
@@ -483,28 +485,27 @@ SetGameModePreferences = function()
 		player_modslevel:FailSetting( GetDefaultFailType() )
 	end
 
+	--------------------------------------------
+	-- finally, load the Stats.xml file appropriate for this SL GameMode
+
 	-- these are the prefixes that are prepended to each custom Stats.xml, resulting in
 	-- Stats.xml, ECFA-Stats.xml, Casual-Stats.xml
-	-- "FA+" mode is prefixed with "ECFA-" because the mode was previously known as "ECFA Mode"
-	-- and I don't want to deal with renaming relatively critical files from the theme.
-	-- Thus, scores from FA+ mode will continue to go into ECFA-Stats.xml.
-	local prefix = {
-		ITG = "",
-		["FA+"] = "ECFA-",
-		Casual = "Casual-"
-	}
+	local prefix = {}
 
-	if PROFILEMAN:GetStatsPrefix() ~= "ITG" then
-		PROFILEMAN:SetStatsPrefix("ITG")
+	-- ITG has no prefix and scores go directly into the main Stats.xml
+	-- this was probably a Bad Decision™ on my part in hindsight  -quietly
+	prefix["DD"] = ""
+
+	if PROFILEMAN:GetStatsPrefix() ~= prefix[SL.Global.GameMode] then
+		PROFILEMAN:SetStatsPrefix(prefix[SL.Global.GameMode])
 	end
 end
-
 -- -----------------------------------------------------------------------
 -- Call ResetPreferencesToStockSM5() to reset all the Preferences that SL silently
 -- manages for you back to their stock SM5 values.
 --
 -- These "managed" Preferences are listed in ./Scripts/SL_Init.lua
--- per-gamemode (Casual, ITG, FA+), and actively applied (and reapplied)
+-- per-gamemode (DD, ITG), and actively applied (and reapplied)
 -- for each new game using SetGameModePreferences()
 --
 -- SL normally calls ResetPreferencesToStockSM5() from
@@ -559,15 +560,6 @@ GetStepsCredit = function(player)
 	end
 
 	return t
-end
-
-DarkUI = function()
-	-- During the process of switching games, THEME:GetCurThemeName() will temporarily return "_fallback"
-	-- which will cause the ThemePrefs system to throw errors when a "RainbowMode" key isn't found
-	-- because a [_fallback] section doesn't exist.  This should really be fixed in the _fallback theme,
-	-- but we can prevent Lua errors from being thrown in the meantime.
-	if THEME:GetCurThemeName() ~= PREFSMAN:GetPreference("Theme") then return false end
-	return false
 end
 
 -- -----------------------------------------------------------------------
@@ -625,7 +617,6 @@ function StripSpriteHints(filename)
 end
 
 function GetJudgmentGraphics(mode)
-	if mode == 'Casual' then mode = 'ITG' end
 	local path = THEME:GetPathG('', '_judgments/' .. mode)
 	local files = FILEMAN:GetDirListing(path .. '/')
 	local judgment_graphics = {}
@@ -716,4 +707,10 @@ GetComboFonts = function()
 	if has_wendy_cursed then table.insert(fonts, "Wendy (Cursed)") end
 
 	return fonts
+end
+
+
+-- -----------------------------------------------------------------------
+IsAutoplay = function(player)
+	return GAMESTATE:GetPlayerState(player):GetPlayerController() ~= "PlayerController_Human"
 end

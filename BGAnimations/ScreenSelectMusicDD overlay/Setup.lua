@@ -1,76 +1,76 @@
--- You know that spot under the rug where you sweep away all the dirty
--- details and then hope no one finds them?  This file is that spot.
---
--- The idea is basically to just throw setup-related stuff
--- in here that we don't want cluttering up default.lua
----------------------------------------------------------------------------
--- because no one wants "Invalid PlayMode 7"
-GAMESTATE:SetCurrentPlayMode(0)
-local SongsInSet = SL.Global.Stages.PlayedThisGame
+local max_length_group = '1:00:00+'
+local max_difficulty_group = '40+'
+local max_bpm_group = '400+'
 
----------------------------------------------------------------------------
--- local junk
-local margin = {
-	w = WideScale(54,72),
-	h = 30
-}
 
--- FIXME: making numCols and numRows configurable variables made sense when SSMCasual was more grid-like
--- but groups are now a single row of coverflow, and songs follow a mostly-hardcoded U-shape transform
--- figure out what else depends on these and refactor
-local numCols = 3
-local numRows = 5
-
----------------------------------------------------------------------------
--- variables that are to be passed between files
-local OptionsWheel = {}
-
--- simple option definitions
-local OptionRows = LoadActor("./OptionRows.lua")
-
-for player in ivalues( PlayerNumber ) do
-	-- create the optionwheel for this player
-	OptionsWheel[player] = setmetatable({disable_wrapping = true}, sick_wheel_mt)
-
-	-- set up each optionrow for each optionwheel
-	for i=1,#OptionRows do
-		OptionsWheel[player][i] = setmetatable({}, sick_wheel_mt)
-	end
+local song_lengths = {}
+for i=0,90-1,30 do
+	song_lengths[#song_lengths+1] = i
 end
+for i=90,5*60-10,5 do
+	song_lengths[#song_lengths+1] = i
+end
+for i=5*60,10*60-60,30 do
+	song_lengths[#song_lengths+1] = i
+end
+for i=10*60,60*60-60,60*5 do
+	song_lengths[#song_lengths+1] = i
+end
+for i=30*60,60*60-10*60,10*60 do
+	song_lengths[#song_lengths+1] = i
+end
+song_lengths[#song_lengths+1] = 60*60
 
-local col = {
-	how_many = numCols,
-	w = (_screen.w/numCols) - margin.w,
-}
-local row = {
-	how_many = numRows,
-	h = ((_screen.h - (margin.h*(numRows-2))) / (numRows-2)),
-}
 
----------------------------------------------------------------------------
--- a steps_type like "StepsType_Dance_Single" is needed so we can filter out steps that aren't suitable
+local function GetMaxIndexBelowOrEqual(values, exact_value)
+	local min_index = 1
+	local max_index = #values
 
-local steps_type = GAMESTATE:GetCurrentStyle():GetStepsType()
-
----------------------------------------------------------------------------
--- initializes sick_wheel OptionRows for the CurrentSong with needed information
--- this function is called when choosing a song, either actively (pressing START)
--- or passively (MenuTimer running out)
-
-local InitOptionRowsForSingleSong = function()
-	for pn in ivalues( PlayerNumber ) do
-		OptionsWheel[pn]:set_info_set(OptionRows, 1)
-
-		for i,row in ipairs(OptionRows) do
-			if row.OnLoad then
-				row.OnLoad(OptionsWheel[pn][i], pn, row:Choices(), row.Values())
-			end
+	while min_index < max_index do
+		local mid_index = math.floor((min_index + max_index+1)/2)
+		local song_length = values[mid_index]
+		if song_length <= exact_value then
+			min_index = mid_index
+		else
+			max_index = mid_index-1
 		end
 	end
+
+	return min_index
+end
+
+local GetSongLengthGroup = function(song)
+	local exact_length = song:MusicLengthSeconds()
+	local index = GetMaxIndexBelowOrEqual(song_lengths, exact_length)
+
+	if index == #song_lengths then
+		return max_length_group
+	else
+		return SecondsToMMSS(song_lengths[index])
+			.. ' - '
+			.. SecondsToMMSS(song_lengths[index+1] - 1)
+	end
+end
+
+local song_bpms = {}
+for i=0,400,10 do
+	song_bpms[#song_bpms+1] = i
+end
+
+
+local function GetSongBpmGroup(song)
+	local exact_bpm = math.round(song:GetDisplayBpms()[2])
+	local index = GetMaxIndexBelowOrEqual(song_bpms, exact_bpm)
+
+	if index == #song_bpms then
+		return max_bpm_group
+	else
+		return song_bpms[index] .. ' - ' .. (song_bpms[index+1] - 1)
+	end
 end
 
 ---------------------------------------------------------------------------
--- helper function used by GetGroups() and GetDefaultSong()
+-- helper function used for groovestats filtering.
 -- returns the contents of a txt file as an indexed table, split on newline
 
 local GetFileContents = function(path)
@@ -99,124 +99,432 @@ local GetFileContents = function(path)
 	return lines
 end
 
+-- Initialize Groovestats filter
+local path = THEME:GetCurrentThemeDirectory() .. "Other/Groovestats-Groups.txt"
+local groovestats_groups = GetFileContents(path)
+local groovestats_groups_set = {}
+if groovestats_groups ~= nil then
+	for group in ivalues(groovestats_groups) do
+		groovestats_groups_set[group] = true
+	end
+end
+
+-- You know that spot under the rug where you sweep away all the dirty
+-- details and then hope no one finds them?  This file is that spot.
+-- The idea is basically to just throw setup-related stuff
+-- in here that we don't want cluttering up default.lua
+---------------------------------------------------------------------------
+-- because no one wants "Invalid PlayMode 7"
+GAMESTATE:SetCurrentPlayMode(0)
+local SongsInSet = SL.Global.Stages.PlayedThisGame
+
+---------------------------------------------------------------------------
+-- local junk
+local margin = {
+	w = WideScale(54,72),
+	h = 30
+}
+
+-- FIXME: making numCols and numRows configurable variables made sense when the song select
+--  was more grid-like, but groups are now a single row, and songs just go up and down.
+local numCols = 3
+local numRows = 5
+
+---------------------------------------------------------------------------
+-- variables that are to be passed between files
+
+local col = {
+	how_many = numCols,
+	w = (_screen.w/numCols) - margin.w,
+}
+local row = {
+	how_many = numRows,
+	h = ((_screen.h - (margin.h*(numRows-2))) / (numRows-2)),
+}
+
+---------------------------------------------------------------------------
+-- a steps_type like "StepsType_Dance_Single" is needed so we can filter out steps that aren't suitable
+
+local steps_type = GAMESTATE:GetCurrentStyle():GetStepsType()
+
+
+local function LetterToGroup(letter)
+	if 'A' <= letter and letter <= 'Z' then
+		return letter
+	elseif '0' <= letter and letter <= '9' then
+		return '#'
+	else
+		return 'Other'
+	end
+end
+
+local function GetSongFirstLetter(song)
+	local letter = song:GetDisplayMainTitle():sub(1,1):upper()
+	return LetterToGroup(letter)
+end
+
+local function GetSongArtistFirstLetter(song)
+	local letter = song:GetDisplayArtist():sub(1,1):upper()
+	return LetterToGroup(letter)
+end
+
+local function GetStepsDifficultyGroup(steps)
+	local meter = steps:GetMeter()
+	if meter >= 40 then return max_difficulty_group end
+	return meter
+end
+
+local GroupSongsBy = function(func)
+	grouped_songs = {}
+
+	for song in ivalues(SONGMAN:GetAllSongs()) do
+		local song_group = func(song)
+
+		if grouped_songs[song_group] == nil then
+			grouped_songs[song_group] = {song}
+		else
+			local songs = grouped_songs[song_group]
+			songs[#songs+1] = song
+		end
+	end
+
+	return grouped_songs
+end
+
+
+local function GetHighestDifficulty(song)
+	local difficulty = 0
+	for steps in ivalues(song:GetStepsByStepsType(GAMESTATE:GetCurrentStyle():GetStepsType())) do
+		difficulty = math.max(difficulty, steps:GetMeter())
+	end
+	return difficulty
+end
+
+local function GetHighestStepCount(song)
+	local count = 0
+	for steps in ivalues(song:GetStepsByStepsType(GAMESTATE:GetCurrentStyle():GetStepsType())) do
+		count = math.max(count, steps:GetRadarValues(PLAYER_1):GetValue('RadarCategory_TapsAndHolds'))
+	end
+	return count
+end
+
+local subsort_funcs = {
+	function(s) return s:GetGroupName() end,
+	function(s) return s:GetDisplayMainTitle():lower() end,
+	function(s) return s:GetDisplayArtist():lower() end,
+	function(s) return s:MusicLengthSeconds() end,
+	function(s) return s:GetDisplayBpms()[2] end,
+	GetHighestStepCount,
+	GetHighestDifficulty,
+}
 ---------------------------------------------------------------------------
 -- provided a group title as a string, prune out songs that don't have valid steps
 -- returns an indexed table of song objects
+local pruned_songs_by_group = {}
+local UpdatePrunedSongs = function()
+	pruned_songs_by_group = {}
 
-local PruneSongsFromGroup = function(group)
-	local songs = {}
-	local current_song = GAMESTATE:GetCurrentSong()
-	local index = 1
+	--[[
+	"GROUP",
+	"TITLE",
+	"ARTIST",
+	"LENGTH",
+	"BPM",
+	"DIFFICULTY",
+	]]--
 
-	-- prune out songs that don't have valid steps
-	for i,song in ipairs(SONGMAN:GetSongsInGroup(group)) do
-		-- this should be guaranteed by this point, but better safe than segfault
-		if song:HasStepsType(steps_type) then
-			-- ensure that at least one stepchart has a meter ≤ CasualMaxMeter (10, by default)
+	local sort_pref = GetMainSortPreference()
+	local songs_by_group
+	if SongSearchSSMDD then
+		songs_by_group = {}
+		songs_by_group['Song Search'] = SONGMAN:GetAllSongs()
+	elseif sort_pref == 1 then
+		songs_by_group = GroupSongsBy(function(song) return song:GetGroupName() end)
+	elseif sort_pref == 2 then
+		songs_by_group = GroupSongsBy(GetSongFirstLetter)
+	elseif sort_pref == 3 then
+		songs_by_group = GroupSongsBy(GetSongArtistFirstLetter)
+	elseif sort_pref == 4 then
+		songs_by_group = GroupSongsBy(GetSongLengthGroup)
+	elseif sort_pref == 5 then
+		songs_by_group = GroupSongsBy(GetSongBpmGroup)
+	elseif sort_pref == 6 then
+		songs_by_group = {}
+		for song in ivalues(SONGMAN:GetAllSongs()) do
+			local meters_set = {}
 			for steps in ivalues(song:GetStepsByStepsType(steps_type)) do
+				local meter = GetStepsDifficultyGroup(steps)
+				meters_set[meter] = true
+			end
+			for meter, _ in pairs(meters_set) do
+				if songs_by_group[meter] == nil then
+					songs_by_group[meter] = {song}
+				else
+					local songs = songs_by_group[meter]
 					songs[#songs+1] = song
-					break
+				end
 			end
 		end
-		-- we need to retain the index of the current song so we can set the SongWheel to start on it
-		if current_song == song then index = #songs end
+	end
+
+	for group, group_songs in pairs(songs_by_group) do
+		local songs = {}
+		
+		-- prune out songs that don't have valid steps or fit the filters
+		for i,song in ipairs(group_songs) do
+			-- this should be guaranteed by this point, but better safe than segfault
+			
+			if song:HasStepsType(steps_type) then
+				local passesFilters = true
+				--- Filter for Length
+				if GetLowerLengthFilter() ~= 0 then
+					if GetLowerLengthFilter() > song:MusicLengthSeconds() then
+						passesFilters = false
+					end
+				end
+
+				if GetUpperLengthFilter() ~= 0 then
+					if GetUpperLengthFilter() < song:MusicLengthSeconds() then
+						passesFilters = false
+					end
+				end
+				
+				--- Filter for BPM
+				if GetLowerBPMFilter() ~= 49 then
+					if song:GetDisplayBpms()[2] < GetLowerBPMFilter() then
+						passesFilters = false
+					end
+				end
+				if GetUpperBPMFilter() ~= 49 then
+					if song:GetDisplayBpms()[2] > GetUpperBPMFilter() then
+						passesFilters = false
+					end
+				end
+
+				---- Filter for Groovestats
+				if GetGroovestatsFilter() == 'Yes' then
+					if not groovestats_groups_set[song:GetGroupName()] then
+						passesFilters = false
+					end
+				end
+
+				---- Filter for Difficulty
+				if GetLowerDifficultyFilter() ~= 0 or GetUpperDifficultyFilter() ~= 0 then
+					local hasPassingDifficulty = false
+					for steps in ivalues(song:GetStepsByStepsType(steps_type)) do
+						local passesLower = GetLowerDifficultyFilter() == 0 or steps:GetMeter() >= GetLowerDifficultyFilter()
+						local passesUpper = GetUpperDifficultyFilter() == 0 or steps:GetMeter() <= GetUpperDifficultyFilter()
+						if passesLower and passesUpper then
+							hasPassingDifficulty = true
+						end
+					end
+					if not hasPassingDifficulty then
+						passesFilters = false
+					end
+				end
+				
+				----- Filter For song search
+				if SongSearchSSMDD == true then
+					local match = false
+					local title = song:GetDisplayFullTitle():lower()
+					-- the query "xl grind" will match a song called "Axle Grinder" no matter
+					-- what the chart info says
+					if title:match(SongSearchAnswer:lower()) then
+						match = true
+					end
+					if not match then
+						for i, steps in ipairs(song:GetStepsByStepsType(steps_type)) do
+							local chartStr = steps:GetAuthorCredit().." "..steps:GetDescription()
+							match = true
+							-- the query "br xo fs" will match any song with at least one chart that
+							-- has "br", "xo" and "fs" in its AuthorCredit + Description
+							for word in SongSearchAnswer:gmatch("%S+") do
+								if not chartStr:lower():match(word:lower()) then
+									match = false
+									break
+								end
+							end
+						end
+					end
+					
+					if match == false then
+						passesFilters = false
+					end
+				
+				end
+				
+				if passesFilters then
+					songs[#songs+1] = song
+				end
+				
+			end
+		end
+		
+		--[[
+		"GROUP",
+		"TITLE",
+		"ARTIST",
+		"LENGTH",
+		"BPM",
+		"# OF STEPS",
+		"DIFFICULTY",
+		]]--
+
+		local sort_func = subsort_funcs[GetSubSortPreference()]
+
+		table.sort(songs, function(a, b)
+			return sort_func(a) < sort_func(b)
+		end)
+
+		pruned_songs_by_group[group] = songs
+	end
+end
+
+local PruneSongsFromGroup = function(group)
+	local songs = pruned_songs_by_group[group]
+	if songs == nil then songs = {} end
+
+	-- Copy songs so that the calling function can mutate the returned table.
+	local songs_copy = {}
+	for song in ivalues(songs) do
+		songs_copy[#songs_copy+1] = song
+	end
+	songs = songs_copy
+
+	local current_song = GAMESTATE:GetCurrentSong()
+	-- we need to retain the index of the current song so we can set the SongWheel to start on it
+	local index = 1
+	for i, song in ipairs(songs) do
+		if current_song == song then
+			index = i
+			break
+		end
 	end
 
 	return songs, index
 end
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 
----------------------------------------------------------------------------
--- parse ./Other/CasualMode-Groups.txt to find which groups will appear in SSMCasual
--- returns an indexed table of group names as strings
+local function GetGroupsBy(func)
+	local groups_set = {}
+	for song in ivalues(SONGMAN:GetAllSongs()) do
+		local group = func(song)
+		groups_set[group] = true
+	end
+	local groups = {}
+	for group, _ in pairs(groups_set) do
+		groups[#groups+1] = group
+	end
+	return groups
+end
+
+local function SortByLetter(a, b)
+	if a == 'Other' then return false end
+	if b == 'Other' then return true end
+	if a == '#' then return false end
+	if b == '#' then return true end
+	return a < b
+end
 
 local GetGroups = function()
-	local path = THEME:GetCurrentThemeDirectory() .. "Other/CasualMode-Groups.txt"
-	local preliminary_groups = GetFileContents(path)
-
-	-- if the file didn't exist or was empty or contained no valid groups,
-	-- return the full list of groups available to SM
-	if preliminary_groups == nil or #preliminary_groups == 0 then
+	if SongSearchSSMDD == true then
+		return {'Song Search'}
+	end	
+	
+	local sort_pref = GetMainSortPreference()
+	if sort_pref == 1 then
 		return SONGMAN:GetSongGroupNames()
-	end
-
-	local groups = {}
-	-- some Groups found in the file may not actually exist due to human error, typos, etc.
-	for prelim_group in ivalues(preliminary_groups) do
-		-- if this group exists
-		if SONGMAN:DoesSongGroupExist( prelim_group ) then
-			-- add this preliminary group to the table of finalized groups
-			groups[#groups+1] = prelim_group
-		end
-	end
-
-	if #groups > 0 then
+	elseif sort_pref == 2 then
+		local groups = GetGroupsBy(GetSongFirstLetter)
+		table.sort(groups, SortByLetter)
 		return groups
-	else
-		return SONGMAN:GetSongGroupNames()
+	elseif sort_pref == 3 then
+		local groups = GetGroupsBy(GetSongArtistFirstLetter)
+		table.sort(groups, SortByLetter)
+		return groups
+	elseif sort_pref == 4 then
+		local groups = GetGroupsBy(GetSongLengthGroup)
+		table.sort(groups, function(a,b)
+			if a == max_length_group then return false end
+			if b == max_length_group then return true end
+			return a < b
+		end)
+		return groups
+	elseif sort_pref == 5 then
+		local groups = GetGroupsBy(GetSongBpmGroup)
+		table.sort(groups, function(a,b)
+			local a_bpm = tonumber(a:match('^[0-9]*'))
+			local b_bpm = tonumber(b:match('^[0-9]*'))
+			return a_bpm < b_bpm
+		end)
+		return groups
+	elseif sort_pref == 6 then
+		local groups_set = {}
+		for song in ivalues(SONGMAN:GetAllSongs()) do
+			for steps in ivalues(song:GetStepsByStepsType(steps_type)) do
+				groups_set[GetStepsDifficultyGroup(steps)] = true
+			end
+		end
+		local groups = {}
+		for group, _ in pairs(groups_set) do
+			groups[#groups+1] = group
+		end
+		table.sort(groups, function(a,b)
+			if a == max_difficulty_group then return false end
+			if b == max_difficulty_group then return true end
+			return a < b
+		end)
+		return groups
 	end
 end
 
+
 ---------------------------------------------------------------------------
--- parse ./Other/CasualMode-DefaultSong.txt to find one or more songs to
--- default to when SSMCasual first loads
--- returns a song object
+
+-- First looks to DDStats for the default song and if it doesn't exist it will look at the stats.xml
+-- since the DD GameMode can't rely on SM to save LastPlayedSong. If neither exist then it defaults 
+-- to the 1st song in the 1st folder.
 
 local GetDefaultSong = function(groups)
-
-	local path = THEME:GetCurrentThemeDirectory() .. "Other/CasualMode-DefaultSong.txt"
-	local preliminary_songs = GetFileContents(path)
-
-	-- the file was empty or doesn't exist, return the first song in the first group
-	if preliminary_songs == nil or #preliminary_songs == 0 then
-		if SONGMAN:FindSong(P1Song) and FindInTable(_group, groups) then
-			songs[#songs+1] = P1Song
-		else
-			return SONGMAN:GetSongsInGroup(groups[1])[1]
-		end
-	end
-
-	-- verify that the song(s) specified actually exist
 	local songs = {}
-	for prelim_song in ivalues(preliminary_songs) do
-		-- parse the group out of the prelim_song string to verify this song
-		-- exists within a permitted group
-		local _group = prelim_song:gsub("/[%w%s]*", "")
+	local playerNum
+	if GAMESTATE:IsPlayerEnabled(PLAYER_1) then
+		playerNum = PLAYER_1
+	else
+		playerNum = PLAYER_2
+	end
 
-		-- if this song exists and is part of a group returned by PruneGroups()
-		if SONGMAN:FindSong( prelim_song ) and FindInTable(_group, groups) then
-			-- add this prelim_song to the table of songs that do exist
-			songs[#songs+1] = prelim_song
+	local lastSong = DDStats.GetStat(playerNum, 'LastSong')
+	if lastSong ~= nil then
+		for group in ivalues(groups) do
+			for song in ivalues(PruneSongsFromGroup(group)) do
+				if song:GetSongDir() == lastSong then
+					return song
+				end
+			end
 		end
 	end
 
-
-	-- if multiple valid songs were found, randomly select and return one
-	if #songs >= 2 then
-		local song = SONGMAN:FindSong( songs[math.random(1, #songs)] )
-		if song then return song end
-
-	-- if DefaultSong.txt only contained one song, return that
-	elseif #songs == 1 then
-		local song = SONGMAN:FindSong( songs[1] )
-		if song then return song end
-	end
-
-	-- fall back on first valid song from first valid group if needed
 	return PruneSongsFromGroup( groups[1] )[1]
 end
 
 ---------------------------------------------------------------------------
+---------------------------------------------------------------------------
 -- prune out groups that have no valid steps
 -- passed an indexed table of strings representing potential group names
 -- returns an indexed table of group names as strings
+
+
 
 local PruneGroups = function(_groups)
 	local groups = {}
 
 	for group in ivalues( _groups ) do
 		local group_has_been_added = false
-
-		for song in ivalues(SONGMAN:GetSongsInGroup(group)) do
+		local songs = PruneSongsFromGroup(group)
+		
+		for song in ivalues(songs) do
 			if song:HasStepsType(steps_type) then
 
 				for steps in ivalues(song:GetStepsByStepsType(steps_type)) do
@@ -228,13 +536,10 @@ local PruneGroups = function(_groups)
 			if group_has_been_added then break end
 		end
 	end
-
 	return groups
 end
 
----------------------------------------------------------------------------
--- currently not used
-
+--------------------------------------------------------------------------
 local GetGroupInfo = function(groups)
 	local info = {}
 	for group in ivalues(groups) do
@@ -279,6 +584,7 @@ local GetGroupInfo = function(groups)
 		end
 		for i,difficulty in ipairs(Difficulty) do
 			if i>5 then break end
+			if charts[difficulty] == nil then charts[difficulty] = 0 end
 			info[group].charts = info[group].charts .. charts[difficulty] .. " " .. THEME:GetString( "CustomDifficulty", ToEnumShortString(difficulty) ) .. "\n"
 		end
 
@@ -289,37 +595,54 @@ end
 ---------------------------------------------------------------------------
 
 
-local current_song = GAMESTATE:GetCurrentSong()
-local group_index = 1
+local current_song
+local group_index
 
--- GetGroups() will read from ./Other/CasualMode-Groups.txt
 local groups = GetGroups()
+UpdatePrunedSongs()
 -- prune the list of potential groups down to valid groups
-groups = PruneGroups(SONGMAN:GetSongGroupNames())
+groups = PruneGroups(groups)
 
 -- If there are STILL no valid groups, we aren't going to find any.
 -- return nil, which default.lua will interpret to mean the
--- player needs to be informed that this machine has no suitable
--- casual content...  D:
+-- player needs to be informed that this machine has no suitable content...  D:
 if #groups == 0 then
 	return nil
 end
 
 -- there will be a current_song if we're on stage 2 or later
--- if no current_song, check ./Other/CasualMode-DefaultSong.txt
-if current_song == nil then
-	current_song = GetDefaultSong(groups)
-	GAMESTATE:SetCurrentSong(current_song)
+
+current_song = GetDefaultSong(groups)
+GAMESTATE:SetCurrentSong(current_song)
+
+-- Find the group of the current song.
+local found_group = false
+if NameOfGroup ~= nil then
+	for song in ivalues(PruneSongsFromGroup(NameOfGroup)) do
+		if song == current_song then
+			found_group = true
+		end
+	end
+end
+if not found_group then
+	for group in ivalues(groups) do
+		for song in ivalues(PruneSongsFromGroup(group)) do
+			if song == current_song then
+				NameOfGroup = group
+				found_group = true
+				break
+			end
+			if found_group then break end
+		end
+	end
 end
 
-group_index = FindInTable(current_song:GetGroupName(), groups) or 1
+group_index = FindInTable(NameOfGroup, groups) or 1
 
 return {
 	steps_type=steps_type,
 	Groups=groups,
 	group_index=group_index,
-	OptionsWheel=OptionsWheel,
-	OptionRows=OptionRows,
 	row=row,
 	col=col,
 	InitOptionRowsForSingleSong=InitOptionRowsForSingleSong,

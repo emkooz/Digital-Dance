@@ -60,6 +60,11 @@ SL_CustomPrefs.Get = function()
 			},
 			Values 	= { "none", "single", "versus", "double" }
 		},
+		WriteCustomScores = {
+			Default = false,
+			Choices =  { THEME:GetString("ThemePrefs","Yes"), THEME:GetString("ThemePrefs", "No") },
+			Values	= { true, false }
+		},
 		-- - - - - - - - - - - - - - - - - - - -
 		-- MenuTimer values for various screens
 		ScreenSelectMusicMenuTimer =

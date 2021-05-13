@@ -13,7 +13,7 @@ function WriteScores()
 		ProductID = ProductID(),
 		ProductVersion = ProductVersion(),
 		MachineGuid = PROFILEMAN:GetMachineProfile():GetGUID(),
-		GameMode = SL.Global.GameMode,
+		GameMode = "ITG",
 	}
 
 	for player in ivalues(GAMESTATE:GetHumanPlayers()) do

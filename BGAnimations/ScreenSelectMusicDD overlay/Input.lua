@@ -115,7 +115,7 @@ t.Handler = function(event)
 	
 
 	if isSortMenuVisible == false then
-		if event.type ~= "InputEventType_Release" then
+		if event.type ~= "InputEventType_Release" and event.type == "InputEventType_FirstPress" then
 			if event.GameButton == "Select" then
 				if event.PlayerNumber == 'PlayerNumber_P1' then
 					PlayerControllingSort = 'PlayerNumber_P1' 
@@ -135,21 +135,22 @@ t.Handler = function(event)
 	if isSortMenuVisible then
 		if event.type ~= "InputEventType_Release" then
 			if GAMESTATE:IsSideJoined(event.PlayerNumber) and event.PlayerNumber == PlayerControllingSort then
-				if event.GameButton == "Select" or event.GameButton == "Back" then
-					if IsSortMenuInputToggled == false then
-						if SortMenuNeedsUpdating == true then
-							SortMenuNeedsUpdating = false
-							MESSAGEMAN:Broadcast("ToggleSortMenu")
-							MESSAGEMAN:Broadcast("ReloadSSMDD")
-							isSortMenuVisible = false
-							SOUND:PlayOnce( THEME:GetPathS("MusicWheel", "expand.ogg") )
-						elseif SortMenuNeedsUpdating == false then
-							isSortMenuVisible = false
-							SOUND:PlayOnce( THEME:GetPathS("ScreenPlayerOptions", "cancel all.ogg") )
-							MESSAGEMAN:Broadcast("ToggleSortMenu")
+				if event.type ~= "InputEventType_Release" and event.type == "InputEventType_FirstPress" then
+					if event.GameButton == "Select" or event.GameButton == "Back" then
+						if IsSortMenuInputToggled == false then
+							if SortMenuNeedsUpdating == true then
+								SortMenuNeedsUpdating = false
+								MESSAGEMAN:Broadcast("ToggleSortMenu")
+								MESSAGEMAN:Broadcast("ReloadSSMDD")
+								isSortMenuVisible = false
+								SOUND:PlayOnce( THEME:GetPathS("MusicWheel", "expand.ogg") )
+							elseif SortMenuNeedsUpdating == false then
+								isSortMenuVisible = false
+								SOUND:PlayOnce( THEME:GetPathS("ScreenPlayerOptions", "cancel all.ogg") )
+								MESSAGEMAN:Broadcast("ToggleSortMenu")
+							end
 						end
 					end
-					MESSAGEMAN:Broadcast("UpdateCursorColor")
 				end
 				if event.GameButton == "Start" then
 					-- main sorts/filters
@@ -249,6 +250,7 @@ t.Handler = function(event)
 						MESSAGEMAN:Broadcast("MoveSortMenuOptionRight")
 					elseif event.GameButton == "Select" or event.GameButton == "Back" then
 						SOUND:PlayOnce( THEME:GetPathS("common", "invalid.ogg") )
+						MESSAGEMAN:Broadcast("UpdateCursorColor")
 						MESSAGEMAN:Broadcast("ToggleSortMenuMovement")
 					end
 				end
@@ -398,22 +400,26 @@ if not GAMESTATE:IsSideJoined(event.PlayerNumber) then
 
 			ChartUpdater.UpdateCharts()
 		elseif event.GameButton == "MenuUp" or event.GameButton == "Up" then
-			local t = GetTimeSinceStart()
-			local dt = t - lastMenuUpPressTime
-			lastMenuUpPressTime = t
-			if dt < 0.5 then
-				SOUND:PlayOnce( THEME:GetPathS("", "_easier.ogg") )
-				ChartUpdater.DecreaseDifficulty(event.PlayerNumber)
-				lastMenuUpPressTime = 0
+			if event.type == "InputEventType_FirstPress" then
+				local t = GetTimeSinceStart()
+				local dt = t - lastMenuUpPressTime
+				lastMenuUpPressTime = t
+				if dt < 0.5 then
+					SOUND:PlayOnce( THEME:GetPathS("", "_easier.ogg") )
+					ChartUpdater.DecreaseDifficulty(event.PlayerNumber)
+					lastMenuUpPressTime = 0
+				end
 			end
 		elseif event.GameButton == "MenuDown" or event.GameButton == "Down" then
-			local t = GetTimeSinceStart()
-			local dt = t - lastMenuDownPressTime
-			lastMenuDownPressTime = t
-			if dt < 0.5 then
-				SOUND:PlayOnce( THEME:GetPathS("", "_harder.ogg") )
-				ChartUpdater.IncreaseDifficulty(event.PlayerNumber)
-				lastMenuDownPressTime = 0
+			if event.type == "InputEventType_FirstPress" then
+				local t = GetTimeSinceStart()
+				local dt = t - lastMenuDownPressTime
+				lastMenuDownPressTime = t
+				if dt < 0.5 then
+					SOUND:PlayOnce( THEME:GetPathS("", "_harder.ogg") )
+					ChartUpdater.IncreaseDifficulty(event.PlayerNumber)
+					lastMenuDownPressTime = 0
+				end
 			end
 		end
 	end

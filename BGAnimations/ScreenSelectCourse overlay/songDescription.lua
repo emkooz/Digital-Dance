@@ -12,10 +12,6 @@
 
 local group_durations = {}
 local stages_remaining = GAMESTATE:GetNumStagesLeft(GAMESTATE:GetMasterPlayerNumber())
-local currentsong = GAMESTATE:GetCurrentSong()
-local HasCDTitle = currentsong:HasCDTitle()
-local blank = THEME:GetPathG("", "_blank.png")
-local CDTitlePath
 
 
 for _,group_name in ipairs(SONGMAN:GetSongGroupNames()) do
@@ -62,48 +58,6 @@ af[#af+1] = Def.ActorFrame{
 	InitCommand=function(self) self:xy(-110,-6) end,
 	
 	
-	--- CDTitle
-	Def.Sprite{
-		Name="CDTitle",
-		CurrentSongChangedMessageCommand=function(self) self:playcommand("Set") end,
-		CloseThisFolderHasFocusMessageCommand=function(self) self:visible(false) end,
-		GroupsHaveChangedMessageCommand=function(self) self:visible(false) end,
-		InitCommand=function(self) 
-			local Height = self:GetHeight()
-			local Width = self:GetWidth()
-			local dim1, dim2=math.max(Width, Height), math.min(Width, Height)
-			local ratio=math.max(dim1/dim2, 2)
-			local toScale = Width > Height and Width or Height
-			self:zoom(22/toScale * ratio)
-			self:horizalign(right)
-			self:xy(265,6)
-			self:diffusealpha(0)
-		end,
-		OnCommand=function(self) 
-			self:decelerate(0.4)
-			self:diffusealpha(0.9) 
-		end,
-		SetCommand=function(self)
-			self:stoptweening()
-			local Height = self:GetHeight()
-			local Width = self:GetWidth()
-			local dim1, dim2=math.max(Width, Height), math.min(Width, Height)
-			local ratio=math.max(dim1/dim2, 2)
-			local toScale = Width > Height and Width or Height	
-			
-			if GAMESTATE:GetCurrentSong() ~= nil then
-				if GAMESTATE:GetCurrentSong():HasCDTitle() == true then
-					CDTitlePath = GAMESTATE:GetCurrentSong():GetCDTitlePath()
-					self:Load(CDTitlePath)
-				else
-					self:Load(blank)
-				end
-			end
-			self:zoom(22/toScale * ratio)
-			self:visible(true)
-		end
-	},
-	
 	-- ----------------------------------------
 	-- Artist Label
 	LoadFont("Common Normal")..{
@@ -122,13 +76,8 @@ af[#af+1] = Def.ActorFrame{
 	LoadFont("Common Normal")..{
 		InitCommand=function(self) self:zoom(0.8):horizalign(left):xy(IsUsingWideScreen() and -4 or 1,-10):maxwidth(WideScale(225,260)) end,
 		SetCommand=function(self)
-			if GAMESTATE:IsCourseMode() then
-				local course = GAMESTATE:GetCurrentCourse()
-				self:settext( course and #course:GetCourseEntries() or "" )
-			else
-				local song = GAMESTATE:GetCurrentSong()
-				self:settext( song and song:GetDisplayArtist() or "" )
-			end
+			local course = GAMESTATE:GetCurrentCourse()
+			self:settext( course and #course:GetCourseEntries() or "" )
 		end
 	},
 
@@ -155,12 +104,13 @@ af[#af+1] = Def.ActorFrame{
 		InitCommand=function(self)
 			-- vertical align has to be middle for BPM value in case of split BPMs having a line break
 			self:align(IsUsingWideScreen() and 0 or -0.3, 0.5)
-			self:xy(-5,5):diffuse(1,1,1,1):vertspacing(-8)
+			self:horizalign(left)
+			self:xy(IsUsingWideScreen() and -5 or 0,5):diffuse(1,1,1,1):vertspacing(-8)
 		end,
 		SetCommand=function(self)
 			if GAMESTATE:GetCurrentSong() == nil then
 				self:settext("")
-			return end
+			end
 				
 			if MusicWheel then SelectedType = MusicWheel:GetSelectedType() end
 
@@ -221,28 +171,17 @@ af[#af+1] = Def.ActorFrame{
 		InitCommand=function(self) 
 			self
 			:align(IsUsingWideScreen() and 0 or -0.7,0)
-			:xy(_w-330 + 5, 14) 
+			:xy(IsUsingWideScreen() and _w-325 or _w-310, 14) 
+			:horizalign(left)
 			:zoom(0.8)
 			end,
 		SetCommand=function(self)
-			
-
 			local seconds
-
-			if SelectedType == "WheelItemDataType_Song" or "SwitchFocusToSingleSong" then
-				-- GAMESTATE:GetCurrentSong() can return nil here if we're in pay mode on round 2 (or later)
-				-- and we're returning to SSM to find that the song we'd just played is no longer available
-				-- because it exceeds the 2-round or 3-round time limit cutoff.
-				local song = GAMESTATE:GetCurrentSong()
-				if song then
-					seconds = song:MusicLengthSeconds()
-				end
-
-			elseif SelectedType == "WheelItemDataType_Section" then
-				-- MusicWheel:GetSelectedSection() will return a string for the text of the currently active WheelItem
-				-- use it here to look up the overall duration of this group from our precalculated table of group durations
-				seconds = group_durations[MusicWheel:GetSelectedSection()]
+			local trail = GAMESTATE:GetCurrentTrail(GAMESTATE:GetMasterPlayerNumber())
+			if trail then
+				seconds = TrailUtil.GetTotalSeconds(trail)
 			end
+
 
 			-- r21 lol
 			if seconds == 105.0 then self:settext(THEME:GetString("SongDescription", "r21")); return end

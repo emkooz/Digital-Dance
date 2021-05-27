@@ -167,7 +167,7 @@ t.Handler = function(event)
 						SortMenuNeedsUpdating = true
 					end	--]]
 					-- 
-					-- Song search
+					-- Song search (if enabled, else it's switch style)
 					if DDSortMenuCursorPosition == 10 then
 						if ThemePrefs.Get("AllowSongSearch") then
 							MESSAGEMAN:Broadcast("SongSearchSSMDD")
@@ -183,7 +183,7 @@ t.Handler = function(event)
 							MESSAGEMAN:Broadcast("ReloadSSMDD")
 						end
 					end
-					-- Switch between single/double
+					-- Switch between single/double (or leaderboards if song search is off, or test input if both are off)
 					if DDSortMenuCursorPosition == 11 then
 						if ThemePrefs.Get("AllowSongSearch") then
 							local current_style = GAMESTATE:GetCurrentStyle():GetStyleType()
@@ -218,7 +218,7 @@ t.Handler = function(event)
 						end
 						
 					end
-					-- GS/RPG Leaderboards if GS Launcher is running, otherwise test input
+					-- GS/RPG Leaderboards if GS Launcher is running (otherwise test input)
 					if DDSortMenuCursorPosition == 12 then
 						if ThemePrefs.Get("AllowSongSearch") then
 							if IsServiceAllowed(SL.GrooveStats.Leaderboard) then
@@ -439,7 +439,7 @@ if not GAMESTATE:IsSideJoined(event.PlayerNumber) then
 			t.WheelWithFocus:scroll_by_amount(-1)
 			SOUND:PlayOnce( THEME:GetPathS("MusicWheel", "change.ogg") )
 			ChartUpdater.UpdateCharts()
-		elseif event.GameButton == "MenuUp" or event.GameButton == "Up" then
+		elseif event.GameButton == "MenuUp" or event.button == "Up" then
 			if event.type == "InputEventType_FirstPress" then
 				local t = GetTimeSinceStart()
 				local dt = t - lastMenuUpPressTime
@@ -450,7 +450,7 @@ if not GAMESTATE:IsSideJoined(event.PlayerNumber) then
 					lastMenuUpPressTime = 0
 				end
 			end
-		elseif event.GameButton == "MenuDown" or event.GameButton == "Down" then
+		elseif event.GameButton == "MenuDown" or event.button == "Down" then
 			if event.type == "InputEventType_FirstPress" then
 				local t = GetTimeSinceStart()
 				local dt = t - lastMenuDownPressTime

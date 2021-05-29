@@ -4,7 +4,6 @@
 local nsj = GAMESTATE:GetNumSidesJoined()
 
 if GAMESTATE:IsCourseMode() then return end
-if not IsUsingWideScreen() and nsj == 2 then return end
 
 local player = ...
 local pn = ToEnumShortString(player)
@@ -23,7 +22,11 @@ end
 
 local af = Def.ActorFrame{
 	InitCommand=function(self)
-		self:visible( GAMESTATE:IsHumanPlayer(player) )
+		if not IsUsingWideScreen() and nsj == 2 then
+			self:visible(false)
+		else
+			self:visible( GAMESTATE:IsHumanPlayer(player) )
+		end
 		self:horizalign(left)
 		self:x(SCREEN_LEFT + width/2)
 		self:y(IsUsingWideScreen() and _screen.cy-13 or _screen.cy+60)
@@ -153,7 +156,7 @@ af2[#af2+1] = LoadFont("Miso/_miso")..{
 	end,
 	RedrawCommand=function(self)
 		if SL[pn].Streams.PeakNPS ~= 0 then
-			self:settext(("Peak NPS: %.1f"):format(SL[pn].Streams.PeakNPS))
+			self:settext(("Peak NPS: %.1f"):format(SL[pn].Streams.PeakNPS * SL.Global.ActiveModifiers.MusicRate))
 		end
 	end
 }

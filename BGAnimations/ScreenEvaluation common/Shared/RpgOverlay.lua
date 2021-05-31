@@ -22,6 +22,13 @@ local SetLeaderboardData = function(rpgAf, rpgData)
 	local entryNum = 1
 	local rivalNum = 1
 	local leaderboard = rpgAf:GetChild("Leaderboard")
+	
+	-- Hide the rival and self highlights.
+	-- They will be unhidden and repositioned as needed below.
+	for i=1,3 do
+		leaderboard:GetChild("Rival"..i):visible(false)
+	end
+	leaderboard:GetChild("Self"):visible(false)
 
 	for gsEntry in ivalues(rpgData["rpgLeaderboard"]) do
 		local entry = leaderboard:GetChild("LeaderboardEntry"..entryNum)
@@ -85,12 +92,12 @@ local GetPaneFunctions = function(rpgAf, rpgData, player)
 	local paneFunctions = {}
 	
 	if rpgData["result"] == "score-added" then
-		score = pss:GetPercentDancePoints()
+		score = pss:GetPercentDancePoints() * 100
 		scoreDelta = score
 		rate = SL.Global.ActiveModifiers.MusicRate or 1.0
 		rateDelta = rate
 	elseif rpgData["result"] == "improved" or rpgData["result"] == "score-not-improved" then
-		score = pss:GetPercentDancePoints()
+		score = pss:GetPercentDancePoints() * 100
 		scoreDelta = rpgData["scoreDelta"] and rpgData["scoreDelta"]/100.0 or 0.0
 		rate = SL.Global.ActiveModifiers.MusicRate or 1.0
 		rateDelta = rpgData["rateDelta"] and rpgData["rateDelta"]/100.0 or 0.0

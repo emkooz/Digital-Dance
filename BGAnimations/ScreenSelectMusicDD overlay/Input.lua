@@ -3,7 +3,6 @@ local args = ...
 local GroupWheel = args.GroupWheel
 local SongWheel = args.SongWheel
 local nsj = GAMESTATE:GetNumSidesJoined()
-local PlayerControllingSort
 
 local ChartUpdater = LoadActor("./UpdateChart.lua")
 local screen = SCREENMAN:GetTopScreen()
@@ -118,7 +117,6 @@ t.Handler = function(event)
 		return false
 	end
 	
-
 	if isSortMenuVisible == false then
 		if event.type ~= "InputEventType_Release" and event.type == "InputEventType_FirstPress" then
 			if event.GameButton == "Select" then
@@ -385,7 +383,7 @@ t.Handler = function(event)
 		return false
 	end
 	
-	
+	--- Input handler for the GS/RPG leaderboards
 	if LeadboardHasFocus then
 		if not (event and event.PlayerNumber and event.button) then
 			return false
@@ -418,6 +416,10 @@ t.Handler = function(event)
 		return false
 	end
 	
+	-- Disable input if EscapeFromEventMode is active
+	if EscapeFromEventMode then
+		t.enabled = false
+	end
 	
 if not GAMESTATE:IsSideJoined(event.PlayerNumber) then
 		if not t.AllowLateJoin() then return false end
@@ -444,7 +446,7 @@ if not GAMESTATE:IsSideJoined(event.PlayerNumber) then
 			SCREENMAN:GetTopScreen():SetNextScreenName( Branch.SSMCancel() ):StartTransitioningScreen("SM_GoToNextScreen")
 		end
 		-------------------------------------------------------------
-		if event.GameButton == "Select" then
+		if event.GameButton == "Select" and event.type == "InputEventType_FirstPress"  then
 			if PressStartForOptions == false then
 					isSortMenuVisible = true
 					SOUND:PlayOnce( THEME:GetPathS("MusicWheel", "sort.ogg") )

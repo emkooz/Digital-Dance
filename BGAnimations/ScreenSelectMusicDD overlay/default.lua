@@ -100,22 +100,56 @@ local t = Def.ActorFrame {
 		if LeavingScreenSelectMusicDD == false then
 			if isSortMenuVisible == false then
 				if InputMenuHasFocus == false then
-					if params.Name == "Exit" then
-						SCREENMAN:GetTopScreen():SetNextScreenName( Branch.SSMCancel() ):StartTransitioningScreen("SM_GoToNextScreen")
-					end
 					if params.Name == "CancelSingleSong" then
 						-- otherwise, run the function to cancel this single song choice
 						Input.CancelSongChoice()
 					end
-					if params.Name == "CloseCurrentFolder" then
+					if params.Name == "CloseCurrentFolder" or params.Name == "CloseCurrentFolder2" then
 						if Input.WheelWithFocus == SongWheel then
 							SOUND:PlayOnce( THEME:GetPathS("MusicWheel", "expand.ogg") )
 							CloseCurrentFolder()
 							MESSAGEMAN:Broadcast("CloseThisFolderHasFocus")
 						end
 					end
+					if params.Name == "SortList" or params.Name == "SortList2" then
+						isSortMenuVisible = true
+						SOUND:StopMusic()
+						SOUND:PlayOnce( THEME:GetPathS("MusicWheel", "sort.ogg") )
+						if params.PlayerNumber == 'PlayerNumber_P1' then
+							PlayerControllingSort = 'PlayerNumber_P1' 
+						else
+							PlayerControllingSort = 'PlayerNumber_P2'
+						end
+						if GAMESTATE:GetCurrentSong() ~= nil then
+							DDStats.SetStat(PLAYER_1, 'LastSong', GAMESTATE:GetCurrentSong():GetSongDir())
+						end
+						MESSAGEMAN:Broadcast("InitializeDDSortMenu")
+						MESSAGEMAN:Broadcast("CheckForSongLeaderboard")
+						MESSAGEMAN:Broadcast("ToggleSortMenu")
+					end
 				end
-			else end
+			--- do this to close the sort menu for people using 3 button input
+			else 
+				if params.Name == "SortList" or params.Name == "SortList2" then
+					if IsSortMenuInputToggled == false then
+						if SortMenuNeedsUpdating == true then
+							SortMenuNeedsUpdating = false
+							MESSAGEMAN:Broadcast("ToggleSortMenu")
+							MESSAGEMAN:Broadcast("ReloadSSMDD")
+							isSortMenuVisible = false
+							SOUND:PlayOnce( THEME:GetPathS("MusicWheel", "expand.ogg") )
+						elseif SortMenuNeedsUpdating == false then
+							isSortMenuVisible = false
+							SOUND:PlayOnce( THEME:GetPathS("ScreenPlayerOptions", "cancel all.ogg") )
+							MESSAGEMAN:Broadcast("ToggleSortMenu")
+						end
+					else
+						SOUND:PlayOnce( THEME:GetPathS("common", "invalid.ogg") )
+						MESSAGEMAN:Broadcast("UpdateCursorColor")
+						MESSAGEMAN:Broadcast("ToggleSortMenuMovement")
+					end
+				end
+			end
 		end
 	end,
 
@@ -165,6 +199,8 @@ local t = Def.ActorFrame {
 	LoadActor("./TestInput.lua"),
 	-- Handles song search data
 	LoadActor("./SongSearch.lua"),
+	-- For backing out of SSMDD.
+	LoadActor('./EscapeFromEventMode.lua'),
 	-- For transitioning to either gameplay or player options.
 	LoadActor('./OptionsMessage.lua'),
 }

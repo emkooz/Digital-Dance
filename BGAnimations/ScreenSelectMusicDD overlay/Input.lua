@@ -127,9 +127,6 @@ t.Handler = function(event)
 				end
 				MESSAGEMAN:Broadcast("InitializeDDSortMenu")
 				MESSAGEMAN:Broadcast("CheckForSongLeaderboard")
-				if GAMESTATE:GetCurrentSong() ~= nil then
-					DDStats.SetStat(PLAYER_1, 'LastSong', GAMESTATE:GetCurrentSong():GetSongDir())
-				end
 			end
 		end
 	end
@@ -435,7 +432,7 @@ if not GAMESTATE:IsSideJoined(event.PlayerNumber) then
 
 	if event.type ~= "InputEventType_Release" then
 
-		if event.GameButton == "Back" then
+		if event.GameButton == "Back" and event.type == "InputEventType_FirstPress" then
 			if didSelectSong then
 				didSelectSong = false
 				PressStartForOptions = false

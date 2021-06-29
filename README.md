@@ -1,15 +1,13 @@
-# Digital Dance v1.0.3
+# Digital Dance v1.0.4
 Huge thanks to Nantano, Sujeet, Ian, and Dom for the Groovestats Launcher/Intergration!
 Also thanks to Box for help getting the new Song Wheel in it's current state!
 Without them this update wouldn't be nearly as awesome~
 
 
-# ------------ Differences from 1.0.2 ------------
-- Music Wheel Grades are back!
-- Menu Up + Menu Down will now close folders on song select. (Up/Down already does this)
-- Left + Right (or Menu-Left + Menu-Right if using dedicated menu buttons) will bring up the Sort Menu now.
-- No Mines will now work with the fail script (it wont fail you now).
-- Some small input bug fixes.
+# ------------ Differences from 1.0.3 ------------
+- "Random" added to song wheel.
+- Last song played/seen are properly set now.
+- Small bug fixes involving music wheel input.
 
 
 # -------------- GrooveStats Integration --------------
@@ -44,16 +42,16 @@ I ended up giving up because it was well out of my abilities, but after picking 
 
 - Song sorts/filters will be remembered between sessions as well. (Profile based)
 
-Currently to access the Sort Menu you have to press the "Select" button (typically the red button on a cab). To update any options all you need to do is select your desired sorts/filters and back out of the sort menu (either by pressing "Select" or "Escape"). It will automatically reload the music wheel with your new sort/filter preferences.
+Accessing the Sort Menu is the same as the default sort menu. To update any options all you need to do is select your desired sorts/filters and back out of the sort menu (either by pressing "Select" or "Escape"). It will automatically reload the music wheel with your new sort/filter preferences.
 
-![sortmenu](https://i.imgur.com/37sNdIj.png)
+![sortmenu](https://i.imgur.com/zxYdwMk.png)
 
 - Added a song search functionality. (In the sort menu)
 
 ![songsearch](https://i.imgur.com/bZ4R32V.png)
 
-If you don't have a keyboard you can just press enter to go back to the music wheel. In the future I will change this to just not show up if you don't have a keyboard, but I want this release to come out asap.
-
+If your setup doesn't have a keyboard you can disable it from appearing in the sort menu in the Operator Menu under "Theme Options".
+You can also refresh the music wheel/undo the song search by either closing the folder of the search or resetting your sorts in the sort menu.
 
 # ---------------- Other Changes ----------------
 
@@ -82,7 +80,7 @@ The image must:
 The aspect ratio can be changed under *Graphics / Sound Options*.
 
 # -- KNOWN ISSUES and general things to note --
-- Sort Menu can only be accessed if you have 4 button navigation on at the moment (aka having a "Select"/Red button)
+- For some people the song search wont update until after leaving the screen and returning. Not sure if a hardware issue or Windows issue?
 - Theme is intended for home use only.
 - I don't expect this to work outside of event mode.
 - 4:3 aspect ratio has less info displayed on 2 player because of lack of room. (No density graph or profile pane)
